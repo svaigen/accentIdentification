@@ -41,6 +41,13 @@ def getLBPFeatures(image, points, radius):
     hist = hist / max_value
     return hist
 
+def removeTrashSymbols(string):
+    string = string.replace("\n","").replace("[","").replace("]","")
+    while "  " in string:
+        string = string.replace("  "," ")
+    string = string.partition(" ")[2]
+    return string
+
 def genLBP(inputFiles, outputPath):
     np.set_printoptions(suppress=True)
     if os.path.exists(outputPath):
@@ -51,10 +58,11 @@ def genLBP(inputFiles, outputPath):
         print "Generate LBP for " + dirClasses[0].rpartition("/")[-1] + " Class...\n"
         for ffile in dirClasses[1]:
             inputFile = "/home/svaigen/TIC"+dirClasses[0].rpartition("..")[-1]+"/"+ffile
-            hist = getLBPFeatures(data.load(inputFile),8,2)
+            hist = str(getLBPFeatures(data.load(inputFile),8,2))
+            hist = removeTrashSymbols(hist)
             outputFile = outputPath + (dirClasses[0].rpartition('/')[-1]) + "/" + inputFile.rpartition('/')[-1].replace(".png",".txt")
             f = open(outputFile,"w")
-            f.write(str(hist))
+            f.write(hist)
             f.close()
 
 inputPath, outputPath = getArgs()
