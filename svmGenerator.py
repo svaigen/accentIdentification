@@ -1,6 +1,7 @@
 import os
 import sys
 import shutil
+import random
 
 def getArgs():
     featurePath = ''
@@ -44,10 +45,38 @@ def createFtList(featurePath, foldsPath):
             fileList.append(f.read())
             f.close()
         featureList.append([i,fileList])
-        infoFile.write("Class: " + dirClass.rpartition("/")[-1] + " - Label: " + str(i) + "\n")
+        infoFile.write("Class: " + dirClass.rpartition("/")[-1] + " - Label: " + str(i) + " \n")
         i = i + 1
     infoFile.close()
     return featureList
 
+def convertSVMFormat(featureList):
+    listSVMFormat = []
+    for ftClass in featureList:
+        ftList = []
+        for lineFt in ftClass[1]:
+            features = ' '.join(['{}:{}'.format(i,ft) for (i,ft) in enumerate(lineFt.split(" "))]).replace('1. ','1.0 ')
+            if "59:" in features: #fix feature 59 bug
+                features = features.rpartition("59:")[0]
+            svmLine = str(ftClass[0]) + " " + features + " \n"
+            ftList.append(svmLine)
+        random.shuffle(ftList)
+        listSVMFormat.append([str(ftClass[0]),ftList])
+    return listSVMFormat
+
+def generateFolds(listSVMFormat, foldsPath, nFolds):
+    folds = [None] * nFolds
+    for fold in range(nFolds):
+        f = open(foldsPath+"fold"+str(fold)+".svm","w" if fold == 0 else "a")
+        for listSVM in listSVMFormat:
+            initIndex = int(len(listSVM[1]) / (nFolds)) * fold #index inclusive
+            endIndex = len(listSVM[1]) if fold == (nFolds - 1) else int(len(listSVM[1]) / (nFolds)) * (fold + 1) #index exclusive
+            line = ''.join(x for x in listSVM[1][initIndex:endIndex])
+            f.write(line)
+        f.close()
+
+
 featurePath, foldsPath, nFolds = getArgs()
 featureList = createFtList(featurePath, foldsPath)
+listSVMFormat = convertSVMFormat(featureList)
+generateFolds(listSVMFormat, foldsPath, nFolds)
