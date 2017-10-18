@@ -37,7 +37,7 @@ def getLBPFeatures(image, points, radius):
     lbp = ft.local_binary_pattern(image=image, P=points, R=radius, method='nri_uniform')
     hist = scipy.stats.itemfreq(lbp)
     hist = np.asarray([value for (i, value) in hist])
-    max_value = np.max(hist)
+    max_value = hist.sum()
     hist = hist / max_value
     return hist
 

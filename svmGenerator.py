@@ -47,6 +47,7 @@ def createFtList(featurePath, foldsPath):
         featureList.append([i,fileList])
         infoFile.write("Class: " + dirClass.rpartition("/")[-1] + " - Label: " + str(i) + " \n")
         i = i + 1
+    infoFile.write("----------------------------------------------------\n")
     infoFile.close()
     return featureList
 
@@ -55,8 +56,8 @@ def convertSVMFormat(featureList):
     for ftClass in featureList:
         ftList = []
         for lineFt in ftClass[1]:
-            features = ' '.join(['{}:{}'.format(i,ft) for (i,ft) in enumerate(lineFt.split(" "))]).replace('1. ','1.0 ')
-            if "59:" in features: #fix feature 59 bug
+            features = ' '.join(['{}:{}'.format(i+1,ft) for (i,ft) in enumerate(lineFt.split(" "))]).replace('1. ','1.0 ')
+            if "60:" in features: #fix feature 60 bug
                 features = features.rpartition("59:")[0]
             svmLine = str(ftClass[0]) + " " + features + " \n"
             ftList.append(svmLine)
@@ -66,17 +67,51 @@ def convertSVMFormat(featureList):
 
 def generateFolds(listSVMFormat, foldsPath, nFolds):
     folds = [None] * nFolds
+    infoFile = open(foldsPath+"info.txt","a")
+
     for fold in range(nFolds):
-        f = open(foldsPath+"fold"+str(fold)+".svm","w" if fold == 0 else "a")
+        f = open(foldsPath+ "fold" + str(fold) + ".svm","w" if fold == 0 else "a")
+        infoFile.write("Fold n. " + str(fold) + ": \n")
         for listSVM in listSVMFormat:
             initIndex = int(len(listSVM[1]) / (nFolds)) * fold #index inclusive
             endIndex = len(listSVM[1]) if fold == (nFolds - 1) else int(len(listSVM[1]) / (nFolds)) * (fold + 1) #index exclusive
             line = ''.join(x for x in listSVM[1][initIndex:endIndex])
             f.write(line)
+            infoFile.write("Class " + str(listSVM[0]) + ": " + str(endIndex - initIndex) + " occurrences \n")
         f.close()
+        infoFile.write("\n")
+    infoFile.close()
+
+def execSVM(foldsPath, nFolds, fold):
+    print "Exec n. " + str(fold) + " - Training fold " + str(fold) + "\n\n"
+    execPath = foldsPath+"exec"+str(fold)+"/"
+    classificationPath= execPath + "classification-fold" + str(fold) + ".svm"
+    trainingPath = execPath + "training.svm"
+
+    if os.path.exists(execPath):
+        shutil.rmtree(execPath)
+    os.makedirs(execPath)
+
+    shutil.copy(foldsPath+"fold"+str(fold)+".svm",classificationPath)
+    trainingFile = open(trainingPath,"w")
+    for n in range(nFolds):
+        if n != fold:
+            f = open(foldsPath + "fold" + str(n) + ".svm", "r")
+            content = f.readlines()
+            f.close()
+            for line in content:
+                trainingFile.write(line)
+    trainingFile.close()
+
+    cmd = "python easySvaigen.py " + trainingPath + " " + classificationPath
+    os.system(cmd)
 
 
 featurePath, foldsPath, nFolds = getArgs()
 featureList = createFtList(featurePath, foldsPath)
 listSVMFormat = convertSVMFormat(featureList)
 generateFolds(listSVMFormat, foldsPath, nFolds)
+
+print "Exec SVM...\n"
+for fold in range(nFolds):
+    execSVM(foldsPath,nFolds,fold)

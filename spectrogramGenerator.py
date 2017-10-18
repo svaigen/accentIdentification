@@ -1,5 +1,5 @@
 #Exemplo de uso:
-# python spectogramGenerator.py "../audios input/" "../spectograms/" 60 29 00:16 22000]
+# python spectrogramGenerator.py "../audios input/" "../spectograms/" 60 29 00:16 22000]
 
 import os
 import sys
@@ -62,6 +62,7 @@ def genSpectogram(inputFiles, outputPath, amplitude, pixelsPerSec, interval, rat
     os.makedirs(outputPath)
 
     for dirClasses in inputFiles:
+        print "Generating Spectrogram for class " + outputPath+dirClasses[0].rpartition('/')[-1] + "\n"
         os.makedirs(outputPath+dirClasses[0].rpartition('/')[-1])
         for ffile in dirClasses[1]:
             inputFile = dirClasses[0]+"/"+ffile
