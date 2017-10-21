@@ -22,8 +22,13 @@ def getArgs():
     except:
         print 'Error. Number of folds not specified (argv[3]) or it\'s not an integer value. Aborting...'
         sys.exit()
+    try:
+        balanced = int(sys.argv[4])
+    except:
+        print 'Error. Balanced Class type not specified (argv[4]). Aborting...'
+        sys.exit()
 
-    return featurePath, foldsPath, nFolds
+    return featurePath, foldsPath, nFolds, balanced
 
 def createFtList(featurePath, foldsPath):
     if not os.path.exists(featurePath):
@@ -65,16 +70,23 @@ def convertSVMFormat(featureList):
         listSVMFormat.append([str(ftClass[0]),ftList])
     return listSVMFormat
 
-def generateFolds(listSVMFormat, foldsPath, nFolds):
+def getMinExamples(listSVM):
+    vMin = len(listSVM[0][1])
+    for examples in listSVM:
+        vMin = len(examples[1]) if vMin > len(examples[1]) else vMin
+    return vMin
+
+def generateFolds(listSVMFormat, foldsPath, nFolds,balanced):
     folds = [None] * nFolds
     infoFile = open(foldsPath+"info.txt","a")
-
+    totalExamplesPerClass = getMinExamples(listSVMFormat) if balanced else 0
     for fold in range(nFolds):
         f = open(foldsPath+ "fold" + str(fold) + ".svm","w" if fold == 0 else "a")
         infoFile.write("Fold n. " + str(fold) + ": \n")
         for listSVM in listSVMFormat:
-            initIndex = int(len(listSVM[1]) / (nFolds)) * fold #index inclusive
-            endIndex = len(listSVM[1]) if fold == (nFolds - 1) else int(len(listSVM[1]) / (nFolds)) * (fold + 1) #index exclusive
+            nExamples = len(listSVM[1]) if totalExamplesPerClass == 0 else totalExamplesPerClass
+            initIndex = int(nExamples / (nFolds)) * fold #index inclusive
+            endIndex = nExamples if fold == (nFolds - 1) else int(nExamples / (nFolds)) * (fold + 1) #index exclusive
             line = ''.join(x for x in listSVM[1][initIndex:endIndex])
             f.write(line)
             infoFile.write("Class " + str(listSVM[0]) + ": " + str(endIndex - initIndex) + " occurrences \n")
@@ -82,11 +94,14 @@ def generateFolds(listSVMFormat, foldsPath, nFolds):
         infoFile.write("\n")
     infoFile.close()
 
-def execSVM(foldsPath, nFolds, fold):
-    print "Exec n. " + str(fold) + " - Training fold " + str(fold) + "\n\n"
+def execSVM(foldsPath, nFolds, fold, logPath):
+    print "\nExec n. " + str(fold) + " - Training fold " + str(fold)
     execPath = foldsPath+"exec"+str(fold)+"/"
     classificationPath= execPath + "classification-fold" + str(fold) + ".svm"
     trainingPath = execPath + "training.svm"
+    flog = open(logPath,"a")
+    flog.write("--- Log of execution n. " + str(fold) + " - Training fold " + str(fold)+ " ---\n")
+    flog.close()
 
     if os.path.exists(execPath):
         shutil.rmtree(execPath)
@@ -103,15 +118,17 @@ def execSVM(foldsPath, nFolds, fold):
                 trainingFile.write(line)
     trainingFile.close()
 
-    cmd = "python easySvaigen.py " + trainingPath + " " + classificationPath
+    cmd = "python easySvaigen.py " + trainingPath + " " + classificationPath + " " + logPath
     os.system(cmd)
 
 
-featurePath, foldsPath, nFolds = getArgs()
+featurePath, foldsPath, nFolds, balanced = getArgs()
 featureList = createFtList(featurePath, foldsPath)
 listSVMFormat = convertSVMFormat(featureList)
-generateFolds(listSVMFormat, foldsPath, nFolds)
-
+generateFolds(listSVMFormat, foldsPath, nFolds, balanced)
+logPath = foldsPath + "log.txt"
+flog = open(logPath,"w")
+flog.close()
 print "Exec SVM...\n"
 for fold in range(nFolds):
-    execSVM(foldsPath,nFolds,fold)
+    execSVM(foldsPath,nFolds,fold, logPath)

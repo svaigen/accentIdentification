@@ -1,5 +1,6 @@
 #Exemplo de uso:
-# python spectrogramGenerator.py "../audios input/" "../spectograms/" 60 29 00:16 22000]
+# python spectrogramGenerator.py ../audios-mp3/ ../spectrograms/ 80 27 18000
+# gera: sox ../audios-mp3/<arquivo> -n rate 18000 spectrogram -z 80 -X 27 -y 694 -r -m -o ../spectrograms/<arquivo>
 
 import os
 import sys
@@ -10,7 +11,6 @@ def getArgs():
     outputPath = ''
     amplitude = ''
     pixelsPerSec = ''
-    interval = ''
     rate = ''
     try:
         inputPath = sys.argv[1]
@@ -33,17 +33,12 @@ def getArgs():
         print 'Error. Pixels per Second not specified (argv[4]). Aborting...'
         sys.exit()
     try:
-        interval = sys.argv[5]
-    except:
-        print 'Error. Interval not specified (argv[5]). Aborting...'
-        sys.exit()
-    try:
-        rate = sys.argv[6]
+        rate = sys.argv[5]
     except:
         print 'Error. Rate not specified (argv[6]). Aborting...'
         sys.exit()
 
-    return inputPath, outputPath, amplitude, pixelsPerSec, interval, rate
+    return inputPath, outputPath, amplitude, pixelsPerSec, rate
 
 
 def readInputFiles(inputPath):
@@ -56,20 +51,20 @@ def readInputFiles(inputPath):
         inputFiles.append([dirClass,os.listdir(dirClass)])
     return inputFiles
 
-def genSpectogram(inputFiles, outputPath, amplitude, pixelsPerSec, interval, rate):
+def genSpectogram(inputFiles, outputPath, amplitude, pixelsPerSec, rate):
     if os.path.exists(outputPath):
         shutil.rmtree(outputPath)
     os.makedirs(outputPath)
 
     for dirClasses in inputFiles:
-        print "Generating Spectrogram for class " + outputPath+dirClasses[0].rpartition('/')[-1] + "\n"
+        print "Generating Spectrogram for path " + outputPath+dirClasses[0].rpartition('/')[-1] + "\n"
         os.makedirs(outputPath+dirClasses[0].rpartition('/')[-1])
         for ffile in dirClasses[1]:
             inputFile = dirClasses[0]+"/"+ffile
             outputFile = outputPath + dirClasses[0].rpartition('/')[-1] + "/" + inputFile.rpartition('/')[-1].replace(".mp3","") + ".png"
-            script = "sox \"" + inputFile + "\" -n spectrogram -z " + amplitude + " -d " + interval + " -X " + pixelsPerSec + " -y 694 -r -m -o " + outputFile
+            script = "sox \"" + inputFile + "\" -n rate " + rate + " spectrogram -z " + amplitude + " -X " + pixelsPerSec + " -y 694 -r -m -o " + outputFile
             os.system(script)
 
-inputPath, outputPath, amplitude, pixelsPerSec, interval, rate = getArgs()
+inputPath, outputPath, amplitude, pixelsPerSec, rate = getArgs()
 inputFiles = readInputFiles(inputPath)
-genSpectogram(inputFiles, outputPath, amplitude, pixelsPerSec, interval, rate)
+genSpectogram(inputFiles, outputPath, amplitude, pixelsPerSec, rate)
