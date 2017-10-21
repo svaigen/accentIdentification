@@ -6,6 +6,7 @@ import random
 def getArgs():
     featurePath = ''
     foldsPath = ''
+    outputPath = ''
 
     try:
         featurePath = sys.argv[1]
@@ -27,8 +28,13 @@ def getArgs():
     except:
         print 'Error. Balanced Class type not specified (argv[4]). Aborting...'
         sys.exit()
+    try:
+        outputPath = sys.argv[5]
+    except:
+        print 'Error. Output Path not specified (argv[5]). Aborting...'
+        sys.exit()
 
-    return featurePath, foldsPath, nFolds, balanced
+    return featurePath, foldsPath, nFolds, balanced, outputPath
 
 def createFtList(featurePath, foldsPath):
     if not os.path.exists(featurePath):
@@ -94,14 +100,11 @@ def generateFolds(listSVMFormat, foldsPath, nFolds,balanced):
         infoFile.write("\n")
     infoFile.close()
 
-def execSVM(foldsPath, nFolds, fold, logPath):
+def execSVM(foldsPath, nFolds, fold):
     print "\nExec n. " + str(fold) + " - Training fold " + str(fold)
     execPath = foldsPath+"exec"+str(fold)+"/"
     classificationPath= execPath + "classification-fold" + str(fold) + ".svm"
     trainingPath = execPath + "training.svm"
-    flog = open(logPath,"a")
-    flog.write("--- Log of execution n. " + str(fold) + " - Training fold " + str(fold)+ " ---\n")
-    flog.close()
 
     if os.path.exists(execPath):
         shutil.rmtree(execPath)
@@ -118,17 +121,17 @@ def execSVM(foldsPath, nFolds, fold, logPath):
                 trainingFile.write(line)
     trainingFile.close()
 
-    cmd = "python easySvaigen.py " + trainingPath + " " + classificationPath + " " + logPath
+    cmd = "python easySvaigen.py " + trainingPath + " " + classificationPath
     os.system(cmd)
 
 
-featurePath, foldsPath, nFolds, balanced = getArgs()
+featurePath, foldsPath, nFolds, balanced, outputPath = getArgs()
 featureList = createFtList(featurePath, foldsPath)
 listSVMFormat = convertSVMFormat(featureList)
 generateFolds(listSVMFormat, foldsPath, nFolds, balanced)
-logPath = foldsPath + "log.txt"
-flog = open(logPath,"w")
-flog.close()
 print "Exec SVM...\n"
 for fold in range(nFolds):
-    execSVM(foldsPath,nFolds,fold, logPath)
+    execSVM(foldsPath,nFolds,fold)
+os.system("python analysisGenerator.py " + foldsPath + " " + outputPath)
+os.system("mv " + foldsPath + "* " + outputPath)
+os.system("Classification done. See the results in: " + outputPath)

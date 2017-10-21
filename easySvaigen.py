@@ -30,8 +30,7 @@ else:
 	gnuplot_exe = r"pgnuplot.exe"
 	grid_py = r"grid.py"
 
-logPath = sys.argv[3]
-flog = open(logPath,"a")
+
 
 assert os.path.exists(svmscale_exe),"svm-scale executable not found"
 assert os.path.exists(svmtrain_exe),"svm-train executable not found"
@@ -53,9 +52,6 @@ if len(sys.argv) > 2:
 	scaled_test_file = file_name + ".scale"
 	predict_test_file = file_name + ".predict"
 
-flog.write("Training files: {} {} {} \n".format(scaled_file,model_file,range_file))
-flog.write("Classification files: {} {} \n".format(scaled_test_file, predict_test_file))
-
 cmd = "%s -s %s %s > %s" % (svmscale_exe, range_file, train_pathname, scaled_file)
 print 'Scaling training data...'
 os.system(cmd)
@@ -71,11 +67,8 @@ while 1:
 	if not line: break
 c,g,rate = map(float,last_line.split())
 
-flog.write("\n --- Results: \n")
-
 print 'Best c=%s, g=%s CV rate=%s' % (c,g,rate)
-flog.write('Best c=%s, g=%s CV rate=%s \n' % (c,g,rate))
-cmd = "%s -c %s -g %s -b 1 %s %s" % (svmtrain_exe,c,g,scaled_file,model_file)
+cmd = "%s -s 0 -c %s -g %s -b 1 %s %s" % (svmtrain_exe,c,g,scaled_file,model_file)
 print 'Training...'
 os.popen(cmd)
 
@@ -90,10 +83,6 @@ if len(sys.argv) > 2:
 	os.system(cmd)
 
 	print 'Output prediction: %s' % predict_test_file
-	flog.write('Output prediction: %s \n' % predict_test_file)
-
-flog.write("--------------------------------------------------------------\n")
-flog.close()
 # Contagem de tempo
 # Rafael Zottesso - 28/02/15
 time_end = timeit.default_timer()
